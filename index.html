@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Equipment Log">
+<title>Usher Equipment Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+:root {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface2: #F0EFE9;
+  --border: #E2E0D8;
+  --border2: #D0CEC4;
+  --text: #1A1916;
+  --text2: #6B6860;
+  --text3: #9B9890;
+  --accent: #C8471A;
+  --accent-bg: #FDF1EC;
+  --accent-border: #E8B09A;
+  --green: #1A7A4A;
+  --green-bg: #EEF7F2;
+  --green-border: #9ECFB5;
+  --blue: #1A4E7A;
+  --blue-bg: #EEF3F8;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.app { max-width: 960px; margin: 0 auto; padding: 20px 16px; }
+
+/* Header */
+.app-header {
+  background: var(--text);
+  color: white;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-header-icon { font-size: 32px; opacity: .85; }
+.app-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -.3px; }
+.app-header p { font-size: 13px; opacity: .6; margin-top: 2px; }
+.save-indicator { margin-left: auto; font-size: 12px; opacity: .5; white-space: nowrap; }
+
+/* Event info */
+.event-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.event-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
+.field input, .field select {
+  font-size: 16px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  color: var(--text);
+  width: 100%;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--accent); background: white; }
+
+/* Sections */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -.2px;
+}
+.section-title i { color: var(--accent); font-size: 20px; }
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.add-btn:hover { background: var(--border); }
+.add-btn:active { transform: scale(.97); }
+
+/* Column headers */
+.col-headers { display: grid; gap: 8px; margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.scanners-cols { grid-template-columns: 100px 1fr 105px 105px 40px; }
+.radios-cols { grid-template-columns: 1fr 1fr 105px 105px 40px; }
+.jackets-cols { grid-template-columns: 1fr 72px 105px 105px 40px; }
+.uniforms-cols { grid-template-columns: 1fr 64px 64px 95px 95px 40px; }
+.col-h { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+
+/* Item cards */
+.item-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  transition: border-color .15s;
+}
+.item-card:focus-within { border-color: var(--border2); background: white; }
+.item-row { display: grid; gap: 8px; align-items: end; }
+.item-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+
+.item-input {
+  font-size: 15px;
+  font-family: 'DM Mono', monospace;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  width: 100%;
+  transition: border-color .15s;
+}
+.item-input:focus { outline: none; border-color: var(--accent); }
+
+/* Name selector */
+.name-wrap { position: relative; }
+.name-select {
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  width: 100%;
+  cursor: pointer;
+}
+.name-select:focus { outline: none; border-color: var(--accent); }
+.name-custom {
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 8px 10px;
+  border: 1.5px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-bg);
+  color: var(--text);
+  width: 100%;
+  margin-top: 5px;
+}
+
+/* Time buttons */
+.time-btn {
+  padding: 8px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text2);
+  font-size: 13px;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  width: 100%;
+  transition: all .15s;
+}
+.time-btn:hover { border-color: var(--accent); color: var(--accent); }
+.time-btn.set {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+  font-weight: 500;
+}
+.time-btn:active { transform: scale(.96); }
+
+/* Remove button */
+.remove-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #EECBCB;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #C44;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.remove-btn:hover { background: #FEF0F0; }
+
+/* Scan button */
+.scan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border: 1.5px solid var(--blue-bg);
+  border-radius: var(--radius-sm);
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 4px;
+  transition: all .15s;
+}
+.scan-btn:hover { background: #dce9f4; }
+.scan-btn i { font-size: 14px; }
+
+/* Toggle */
+.toggle { position: relative; width: 48px; height: 28px; cursor: pointer; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--border2);
+  border-radius: 14px;
+  transition: .2s;
+}
+.toggle-slider:before {
+  content: ""; position: absolute;
+  width: 20px; height: 20px;
+  left: 4px; top: 4px;
+  background: white; border-radius: 50%;
+  transition: .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle input:checked + .toggle-slider { background: var(--green); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+/* Comments & signature */
+.comments-area {
+  width: 100%; min-height: 72px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  resize: vertical;
+  margin-top: 10px;
+}
+.comments-area:focus { outline: none; border-color: var(--accent); background: white; }
+
+.sig-canvas {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: crosshair;
+  background: white;
+  touch-action: none;
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  height: 120px;
+}
+.sig-clear {
+  font-size: 12px; color: var(--text3);
+  cursor: pointer; text-decoration: underline;
+  margin-top: 6px; background: none; border: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Footer buttons */
+.footer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.foot-btn {
+  padding: 17px;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .15s;
+  letter-spacing: -.1px;
+}
+.foot-btn:active { transform: scale(.98); }
+.btn-save {
+  border: 1.5px solid var(--border2);
+  background: white;
+  color: var(--text);
+}
+.btn-save:hover { background: var(--surface2); }
+.btn-submit {
+  border: none;
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 8px rgba(200,71,26,.3);
+}
+.btn-submit:hover { background: #A83814; }
+.btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 20px;
+  color: var(--text3); font-size: 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--text); color: white;
+  padding: 13px 24px;
+  border-radius: 100px;
+  font-size: 14px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  z-index: 9999; opacity: 0;
+  transition: all .3s; pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green); }
+.toast.error { background: #C44; }
+
+/* Camera modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--text);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 90%; max-width: 480px;
+  color: white;
+}
+.modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.modal p { font-size: 13px; opacity: .6; margin-bottom: 14px; }
+#scanVideo { width: 100%; border-radius: var(--radius-sm); background: #000; display: block; }
+#scanCanvas { display: none; }
+.modal-close {
+  width: 100%; margin-top: 12px;
+  padding: 12px; border: 1px solid rgba(255,255,255,.2);
+  border-radius: var(--radius-sm);
+  background: transparent; color: white;
+  font-size: 15px; font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+.scan-line {
+  position: relative;
+  overflow: hidden;
+}
+.scan-line::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  animation: scanline 2s linear infinite;
+  top: 0;
+}
+@keyframes scanline { 0% { top: 0; } 100% { top: 100%; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="app-header">
+    <i class="ti ti-clipboard-list app-header-icon"></i>
+    <div>
+      <h1>Usher Equipment Log</h1>
+      <p>Pacers — Scanners · Radios · Jackets · Uniforms</p>
+    </div>
+    <div class="save-indicator" id="saveIndicator">No saved draft</div>
+  </div>
+
+  <!-- Event Info -->
+  <div class="event-card">
+    <div class="section-title"><i class="ti ti-calendar-event"></i>Event Information</div>
+    <div class="event-grid">
+      <div class="field"><label>Event Name</label><input type="text" id="eventName" placeholder="e.g. Fever vs Golden State" autocomplete="off"></div>
+      <div class="field"><label>Date</label><input type="date" id="eventDate"></div>
+      <div class="field"><label>Supervisor Name</label><input type="text" id="supervisorName" placeholder="Your name" autocomplete="off"></div>
+      <div class="field"><label>Event Time</label><input type="time" id="eventTime"></div>
+    </div>
+  </div>
+
+  <!-- Scanners -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="ti ti-scan"></i>Scanners</div>
+      <button class="add-btn" onclick="addRow('scanners')"><i class="ti ti-plus"></i>Add Scanner</button>
+    </div>
+    <div class="col-headers scanners-cols">
+      <div class="col-h">Asset ID</div>
+      <div class="col-h">Staff Name</div>
+      <div class="col-h">Time Out</div>
+      <div class="col-h">Time In</div>
+      <div></div>
+    </div>
+    <div id="scanners-list"><div class="empty-state">No scanners added yet — tap "Add Scanner"</div></div>
+  </div>
+
+  <!-- Radios -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="ti ti-radio"></i>Radios</div>
+      <button class="add-btn" onclick="addRow('radios')"><i class="ti ti-plus"></i>Add Radio</button>
+    </div>
+    <div class="col-headers radios-cols">
+      <div class="col-h">Role / Position</div>
+      <div class="col-h">Staff Name</div>
+      <div class="col-h">Time Out</div>
+      <div class="col-h">Time In</div>
+      <div></div>
+    </div>
+    <div id="radios-list"><div class="empty-state">No radios added yet — tap "Add Radio"</div></div>
+  </div>
+
+  <!-- Jackets -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="ti ti-hanger"></i>Jackets</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="toggle"><input type="checkbox" id="jacketToggle" onchange="toggleSection('jackets')"><span class="toggle-slider"></span></label>
+        <span style="font-size:13px;color:var(--text2)">Distributing jackets</span>
+        <button class="add-btn" id="addJacketBtn" style="display:none" onclick="addRow('jackets')"><i class="ti ti-plus"></i>Add</button>
+      </div>
+    </div>
+    <div id="jackets-body" style="display:none">
+      <div class="col-headers jackets-cols">
+        <div class="col-h">Staff Name</div>
+        <div class="col-h">Size</div>
+        <div class="col-h">Time Out</div>
+        <div class="col-h">Time In</div>
+        <div></div>
+      </div>
+      <div id="jackets-list"><div class="empty-state">No jackets yet</div></div>
+    </div>
+  </div>
+
+  <!-- Uniforms -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="ti ti-shirt"></i>Uniform Exchange</div>
+      <label class="toggle"><input type="checkbox" id="uniformToggle" onchange="toggleSection('uniforms')"><span class="toggle-slider"></span></label>
+    </div>
+    <div id="uniforms-body" style="display:none">
+      <div id="uniforms-list"></div>
+      <button class="add-btn" onclick="addRow('uniforms')" style="margin-top:8px"><i class="ti ti-plus"></i>Add Exchange</button>
+    </div>
+  </div>
+
+  <!-- Comments -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-message" style="margin-right:6px"></i>Comments / Device Issues</div>
+    <textarea class="comments-area" id="comments" placeholder="Any additional notes or device issues..."></textarea>
+  </div>
+
+  <!-- Signature -->
+  <div class="section">
+    <div class="section-title"><i class="ti ti-signature" style="margin-right:6px"></i>Supervisor Signature</div>
+    <p style="font-size:13px;color:var(--text2);margin-top:6px">Sign below with your finger or Apple Pencil</p>
+    <canvas class="sig-canvas" id="sigCanvas"></canvas>
+    <button class="sig-clear" onclick="clearSig()">Clear signature</button>
+  </div>
+
+  <div class="footer">
+    <button class="foot-btn btn-save" onclick="saveProgress()"><i class="ti ti-device-floppy"></i>Save Draft</button>
+    <button class="foot-btn btn-submit" id="submitBtn" onclick="submitForm()"><i class="ti ti-send"></i>Submit & Send</button>
+  </div>
+
+</div>
+
+<!-- Camera Scanner Modal -->
+<div class="modal-overlay" id="scanModal">
+  <div class="modal">
+    <h3 id="scanTitle">Scan Barcode</h3>
+    <p id="scanSubtitle">Point camera at the barcode on the equipment</p>
+    <div class="scan-line">
+      <video id="scanVideo" autoplay playsinline muted></video>
+    </div>
+    <canvas id="scanCanvas"></canvas>
+    <button class="modal-close" onclick="closeScanner()"><i class="ti ti-x"></i> Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STAFF = ["Tyra Anderson","Teresa Bonko","Nancy Bradley","Joel Brantingham","Linda Bryant","Tanya Cameron","Aldo Cervantes","Mark Costello","Tessa Cox","Raymond Crabtree","Michael Crockett","Scott Eaton","Melvin Evans","Kevin Faulkner","John Feely","Bob Fink","Ken Hall","Dane Hayden","Randy Hicks","Michael Hoovler","Mark Kijak","Evan Kiser","Alan Leblanc","Michelle Little","Bill Lucas","Sherre Mace","Jon Matthews","Josh Minor","Tawni Miracle","Harley Monroe","Lucas Mora","Lorna O'Connell","Kevin Phares","Cecily Ramey","Joyce Rollins","Paul Sanders","Yvonne Spiller","Steve St. Clair","Kelly St. Clair","Carrie-Ann Staggs","Ali Staton","Melinda Sullivan","John Triplett","Amy Ulerick","Ellen Vician","Jeff Washington","Frank Wimsatt","Herman Winters"];
+const SAVE_KEY = 'usher_equip_v2';
+
+const appData = { scanners: [], radios: [], jackets: [], uniforms: [] };
+let counts = { scanners: 0, radios: 0, jackets: 0, uniforms: 0 };
+
+// Scanner state
+let scanStream = null;
+let scanInterval = null;
+let scanCallback = null;
+
+// ─── Toast ───────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ─── Time ─────────────────────────────────────────────
+function fmtTime() {
+  const n = new Date(), h = n.getHours(), m = n.getMinutes();
+  const s = h >= 12 ? 'p' : 'a', h12 = h % 12 || 12;
+  return h12 + ':' + (m < 10 ? '0' + m : m) + s;
+}
+
+// ─── Name select HTML ──────────────────────────────────
+function nameSelectHTML(type, id) {
+  const opts = STAFF.map(n => `<option value="${n}">${n}</option>`).join('');
+  return `
+    <select class="name-select" onchange="handleNameSelect('${type}','${id}',this)">
+      <option value="">— Select name —</option>
+      ${opts}
+      <option value="__other__">Other (type below)…</option>
+    </select>
+    <input type="text" class="name-custom" id="custom_${id}" placeholder="Type name here"
+      style="display:none" oninput="updateField('${type}','${id}','name',this.value)">
+    <button class="scan-btn" onclick="startNameScan('${type}','${id}')">
+      <i class="ti ti-id-badge"></i> Scan ID Badge
+    </button>`;
+}
+
+function handleNameSelect(type, id, sel) {
+  const c = document.getElementById('custom_' + id);
+  if (sel.value === '__other__') {
+    c.style.display = 'block'; c.focus();
+    updateField(type, id, 'name', '');
+  } else {
+    c.style.display = 'none';
+    updateField(type, id, 'name', sel.value);
+  }
+}
+
+// ─── Data helpers ─────────────────────────────────────
+function updateField(type, id, field, val) {
+  const item = appData[type].find(x => x.id === id);
+  if (item) item[field] = val;
+}
+function setTime(type, id, field) {
+  const item = appData[type].find(x => x.id === id);
+  if (item) { item[field] = fmtTime(); render(type); }
+}
+function removeRow(type, id) {
+  appData[type] = appData[type].filter(x => x.id !== id);
+  render(type);
+}
+function addRow(type) {
+  const id = type[0] + counts[type]++;
+  if (type === 'scanners') appData.scanners.push({ id, asset: '', name: '', out: '', in: '' });
+  else if (type === 'radios') appData.radios.push({ id, role: '', name: '', out: '', in: '' });
+  else if (type === 'jackets') appData.jackets.push({ id, name: '', size: 'M', out: '', in: '' });
+  else if (type === 'uniforms') appData.uniforms.push({ id, name: '', oldSize: 'M', newSize: 'M', out: '', in: '' });
+  render(type);
+  setTimeout(() => {
+    const f = document.querySelector(`#${type}-list .item-card:last-child select, #${type}-list .item-card:last-child input`);
+    if (f) f.focus();
+  }, 60);
+}
+
+// ─── Render ───────────────────────────────────────────
+const SIZES = ['XS','S','M','L','XL','2XL','3XL'];
+function sizeOpts(cur) { return SIZES.map(s => `<option${s===cur?' selected':''}>${s}</option>`).join(''); }
+
+function render(type) {
+  const el = document.getElementById(type + '-list');
+  const arr = appData[type];
+  if (!arr.length) { el.innerHTML = '<div class="empty-state">None added yet</div>'; return; }
+
+  if (type === 'scanners') {
+    el.innerHTML = arr.map(s => `<div class="item-card"><div class="item-row scanners-cols">
+      <div>
+        <div class="item-label">Asset ID</div>
+        <input class="item-input" value="${s.asset}" placeholder="S003" oninput="updateField('scanners','${s.id}','asset',this.value)">
+        <button class="scan-btn" style="margin-top:4px" onclick="startBarcodeScan('scanners','${s.id}')"><i class="ti ti-barcode"></i> Scan Barcode</button>
+      </div>
+      <div><div class="item-label">Staff Name</div>${nameSelectHTML('scanners', s.id)}</div>
+      <div><div class="item-label">Time Out</div><button class="time-btn${s.out?' set':''}" onclick="setTime('scanners','${s.id}','out')">${s.out||'Tap to stamp'}</button></div>
+      <div><div class="item-label">Time In</div><button class="time-btn${s.in?' set':''}" onclick="setTime('scanners','${s.id}','in')">${s.in||'Tap to stamp'}</button></div>
+      <div style="display:flex;align-items:center;padding-top:18px"><button class="remove-btn" onclick="removeRow('scanners','${s.id}')"><i class="ti ti-trash"></i></button></div>
+    </div></div>`).join('');
+  }
+
+  if (type === 'radios') {
+    el.innerHTML = arr.map(r => `<div class="item-card"><div class="item-row radios-cols">
+      <div><div class="item-label">Role / Position</div><input class="item-input" value="${r.role}" placeholder="ADA Escort 1, Supervisor…" oninput="updateField('radios','${r.id}','role',this.value)"></div>
+      <div><div class="item-label">Staff Name</div>${nameSelectHTML('radios', r.id)}</div>
+      <div><div class="item-label">Time Out</div><button class="time-btn${r.out?' set':''}" onclick="setTime('radios','${r.id}','out')">${r.out||'Tap to stamp'}</button></div>
+      <div><div class="item-label">Time In</div><button class="time-btn${r.in?' set':''}" onclick="setTime('radios','${r.id}','in')">${r.in||'Tap to stamp'}</button></div>
+      <div style="display:flex;align-items:center;padding-top:18px"><button class="remove-btn" onclick="removeRow('radios','${r.id}')"><i class="ti ti-trash"></i></button></div>
+    </div></div>`).join('');
+  }
+
+  if (type === 'jackets') {
+    el.innerHTML = arr.map(j => `<div class="item-card"><div class="item-row jackets-cols">
+      <div><div class="item-label">Staff Name</div>${nameSelectHTML('jackets', j.id)}</div>
+      <div><div class="item-label">Size</div><select class="item-input" onchange="updateField('jackets','${j.id}','size',this.value)">${sizeOpts(j.size)}</select></div>
+      <div><div class="item-label">Time Out</div><button class="time-btn${j.out?' set':''}" onclick="setTime('jackets','${j.id}','out')">${j.out||'Tap to stamp'}</button></div>
+      <div><div class="item-label">Time In</div><button class="time-btn${j.in?' set':''}" onclick="setTime('jackets','${j.id}','in')">${j.in||'Tap to stamp'}</button></div>
+      <div style="display:flex;align-items:center;padding-top:18px"><button class="remove-btn" onclick="removeRow('jackets','${j.id}')"><i class="ti ti-trash"></i></button></div>
+    </div></div>`).join('');
+  }
+
+  if (type === 'uniforms') {
+    el.innerHTML = arr.map(u => `<div class="item-card"><div style="display:grid;grid-template-columns:1fr 64px 64px 95px 95px 40px;gap:8px;align-items:end">
+      <div><div class="item-label">Staff Name</div>${nameSelectHTML('uniforms', u.id)}</div>
+      <div><div class="item-label">Old Size</div><select class="item-input" onchange="updateField('uniforms','${u.id}','oldSize',this.value)">${sizeOpts(u.oldSize)}</select></div>
+      <div><div class="item-label">New Size</div><select class="item-input" onchange="updateField('uniforms','${u.id}','newSize',this.value)">${sizeOpts(u.newSize)}</select></div>
+      <div><div class="item-label">Time Out</div><button class="time-btn${u.out?' set':''}" onclick="setTime('uniforms','${u.id}','out')">${u.out||'Tap to stamp'}</button></div>
+      <div><div class="item-label">Time In</div><button class="time-btn${u.in?' set':''}" onclick="setTime('uniforms','${u.id}','in')">${u.in||'Tap to stamp'}</button></div>
+      <div style="display:flex;align-items:center;padding-top:18px"><button class="remove-btn" onclick="removeRow('uniforms','${u.id}')"><i class="ti ti-trash"></i></button></div>
+    </div></div>`).join('');
+  }
+
+  restoreSelects(type);
+}
+
+function restoreSelects(type) {
+  appData[type].forEach((item, idx) => {
+    const name = item.name; if (!name) return;
+    const cards = document.querySelectorAll(`#${type}-list .item-card`);
+    if (!cards[idx]) return;
+    const sel = cards[idx].querySelector('.name-select');
+    const custom = document.getElementById('custom_' + item.id);
+    if (!sel) return;
+    if (STAFF.includes(name)) { sel.value = name; }
+    else if (name) { sel.value = '__other__'; if (custom) { custom.style.display = 'block'; custom.value = name; } }
+  });
+}
+
+// ─── Toggles ──────────────────────────────────────────
+function toggleSection(type) {
+  if (type === 'jackets') {
+    const on = document.getElementById('jacketToggle').checked;
+    document.getElementById('jackets-body').style.display = on ? 'block' : 'none';
+    document.getElementById('addJacketBtn').style.display = on ? 'flex' : 'none';
+  }
+  if (type === 'uniforms') {
+    document.getElementById('uniforms-body').style.display =
+      document.getElementById('uniformToggle').checked ? 'block' : 'none';
+  }
+}
+
+// ─── Camera / Barcode Scanning ────────────────────────
+function startBarcodeScan(type, id) {
+  document.getElementById('scanTitle').textContent = 'Scan Equipment Barcode';
+  document.getElementById('scanSubtitle').textContent = 'Point camera at the barcode on the equipment';
+  scanCallback = (result) => {
+    updateField(type, id, 'asset', result);
+    render(type);
+    showToast('✓ Barcode scanned: ' + result, 'success');
+  };
+  openScanner();
+}
+
+function startNameScan(type, id) {
+  document.getElementById('scanTitle').textContent = 'Scan ID Badge';
+  document.getElementById('scanSubtitle').textContent = 'Point camera at the name on the ID badge';
+  scanCallback = (result) => {
+    // Try to match to staff list first
+    const upper = result.toUpperCase();
+    const match = STAFF.find(s => upper.includes(s.toUpperCase().split(' ')[0]) || upper.includes(s.toUpperCase().split(' ')[1] || ''));
+    const finalName = match || result;
+    updateField(type, id, 'name', finalName);
+    render(type);
+    showToast('✓ Name captured: ' + finalName, 'success');
+  };
+  openScanner();
+}
+
+function openScanner() {
+  document.getElementById('scanModal').classList.add('open');
+  const video = document.getElementById('scanVideo');
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+  }).then(stream => {
+    scanStream = stream;
+    video.srcObject = stream;
+    video.play();
+    scanInterval = setInterval(tryDecode, 200);
+  }).catch(err => {
+    closeScanner();
+    showToast('Camera not available — try manually entering', 'error');
+  });
+}
+
+function tryDecode() {
+  const video = document.getElementById('scanVideo');
+  const canvas = document.getElementById('scanCanvas');
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    closeScanner();
+    if (scanCallback) scanCallback(code.data);
+  }
+}
+
+function closeScanner() {
+  document.getElementById('scanModal').classList.remove('open');
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  scanCallback = null;
+}
+
+// ─── Signature ────────────────────────────────────────
+const sigCanvas = document.getElementById('sigCanvas');
+sigCanvas.width = 920; sigCanvas.height = 120;
+const sigCtx = sigCanvas.getContext('2d');
+let drawing = false, lx = 0, ly = 0;
+
+function getPos(e, c) {
+  const r = c.getBoundingClientRect(), sx = c.width / r.width, sy = c.height / r.height;
+  if (e.touches) return { x: (e.touches[0].clientX - r.left) * sx, y: (e.touches[0].clientY - r.top) * sy };
+  return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+}
+sigCanvas.addEventListener('pointerdown', e => { drawing = true; const p = getPos(e, sigCanvas); lx = p.x; ly = p.y; sigCtx.beginPath(); sigCtx.arc(lx, ly, 1.5, 0, Math.PI * 2); sigCtx.fillStyle = '#1A1916'; sigCtx.fill(); e.preventDefault(); }, { passive: false });
+sigCanvas.addEventListener('pointermove', e => { if (!drawing) return; const p = getPos(e, sigCanvas); sigCtx.beginPath(); sigCtx.moveTo(lx, ly); sigCtx.lineTo(p.x, p.y); sigCtx.strokeStyle = '#1A1916'; sigCtx.lineWidth = 2.5; sigCtx.lineCap = 'round'; sigCtx.stroke(); lx = p.x; ly = p.y; e.preventDefault(); }, { passive: false });
+sigCanvas.addEventListener('pointerup', () => drawing = false);
+sigCanvas.addEventListener('pointerleave', () => drawing = false);
+function clearSig() { sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+
+// ─── Save / Load ──────────────────────────────────────
+function saveProgress() {
+  const save = {
+    eventName: document.getElementById('eventName').value,
+    eventDate: document.getElementById('eventDate').value,
+    supervisorName: document.getElementById('supervisorName').value,
+    eventTime: document.getElementById('eventTime').value,
+    comments: document.getElementById('comments').value,
+    jacketOn: document.getElementById('jacketToggle').checked,
+    uniformOn: document.getElementById('uniformToggle').checked,
+    data: JSON.parse(JSON.stringify(appData)),
+    counts: { ...counts },
+    savedAt: new Date().toLocaleString()
+  };
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    document.getElementById('saveIndicator').textContent = 'Saved ' + save.savedAt;
+    showToast('✓ Draft saved', 'success');
+  } catch (e) { showToast('Could not save — storage full?', 'error'); }
+}
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const save = JSON.parse(raw);
+    document.getElementById('eventName').value = save.eventName || '';
+    document.getElementById('eventDate').value = save.eventDate || '';
+    document.getElementById('supervisorName').value = save.supervisorName || '';
+    document.getElementById('eventTime').value = save.eventTime || '';
+    document.getElementById('comments').value = save.comments || '';
+    if (save.jacketOn) { document.getElementById('jacketToggle').checked = true; toggleSection('jackets'); }
+    if (save.uniformOn) { document.getElementById('uniformToggle').checked = true; toggleSection('uniforms'); }
+    Object.assign(appData, save.data);
+    Object.assign(counts, save.counts);
+    ['scanners','radios','jackets','uniforms'].forEach(t => render(t));
+    document.getElementById('saveIndicator').textContent = 'Draft from ' + save.savedAt;
+    showToast('Draft restored from ' + save.savedAt);
+  } catch (e) {}
+}
+
+// ─── Build PDF ────────────────────────────────────────
+function buildPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  let y = 15; const lm = 15, rw = 180;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+  doc.text('Usher Equipment Log', lm, y); y += 8;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  const ev = document.getElementById('eventName').value || '—';
+  const dt = document.getElementById('eventDate').value || '—';
+  const sv = document.getElementById('supervisorName').value || '—';
+  const tm = document.getElementById('eventTime').value || '—';
+  doc.text(`Event: ${ev}`, lm, y); doc.text(`Date: ${dt}   Time: ${tm}`, lm + 95, y); y += 6;
+  doc.text(`Supervisor: ${sv}`, lm, y); y += 7;
+  doc.setDrawColor(200); doc.line(lm, y, lm + rw, y); y += 6;
+
+  function secTitle(t) { if (y > 245) { doc.addPage(); y = 15; } doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text(t, lm, y); y += 6; doc.setFont('helvetica', 'normal'); doc.setFontSize(9); }
+  function tHead(cols, ws) { let x = lm; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); cols.forEach((c, i) => { doc.text(c, x, y); x += ws[i]; }); y += 4; doc.setDrawColor(180); doc.line(lm, y, lm + rw, y); y += 3; doc.setFont('helvetica', 'normal'); }
+  function tRow(vals, ws) { if (y > 255) { doc.addPage(); y = 15; } let x = lm; vals.forEach((v, i) => { doc.text(String(v || '—'), x, y, { maxWidth: ws[i] - 2 }); x += ws[i]; }); y += 5.5; }
+
+  if (appData.scanners.length) { secTitle('Scanners'); tHead(['Asset ID', 'Staff Name', 'Time Out', 'Time In'], [28, 80, 36, 36]); appData.scanners.forEach(s => tRow([s.asset, s.name, s.out, s.in], [28, 80, 36, 36])); y += 3; }
+  if (appData.radios.length) { secTitle('Radios'); tHead(['Role / Position', 'Staff Name', 'Time Out', 'Time In'], [65, 65, 25, 25]); appData.radios.forEach(r => tRow([r.role, r.name, r.out, r.in], [65, 65, 25, 25])); y += 3; }
+
+  const jOn = document.getElementById('jacketToggle').checked;
+  const uOn = document.getElementById('uniformToggle').checked;
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.text(`Jacket Distribution: ${jOn ? 'Yes' : 'No'}`, lm, y); y += 5;
+  doc.text(`Uniform Exchange: ${uOn ? 'Yes' : 'No'}`, lm, y); y += 6;
+
+  if (jOn && appData.jackets.length) { secTitle('Jackets'); tHead(['Staff Name', 'Size', 'Time Out', 'Time In'], [80, 18, 36, 36]); appData.jackets.forEach(j => tRow([j.name, j.size, j.out, j.in], [80, 18, 36, 36])); y += 3; }
+  if (uOn && appData.uniforms.length) { secTitle('Uniform Exchanges'); tHead(['Staff Name', 'Old', 'New', 'Time Out', 'Time In'], [65, 18, 18, 36, 36]); appData.uniforms.forEach(u => tRow([u.name, u.oldSize, u.newSize, u.out, u.in], [65, 18, 18, 36, 36])); y += 3; }
+
+  const comments = document.getElementById('comments').value;
+  if (comments) { if (y > 230) { doc.addPage(); y = 15; } doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text('Comments / Device Issues:', lm, y); y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(9); const lines = doc.splitTextToSize(comments, rw); doc.text(lines, lm, y); y += lines.length * 4.5 + 4; }
+
+  if (y > 220) { doc.addPage(); y = 15; }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text('Supervisor Signature:', lm, y); y += 3;
+  doc.addImage(sigCanvas.toDataURL('image/png'), 'PNG', lm, y, 75, 20); y += 24;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, lm, y);
+
+  return doc;
+}
+
+// ─── Submit ───────────────────────────────────────────
+async function submitForm() {
+  const ev = document.getElementById('eventName').value;
+  const sv = document.getElementById('supervisorName').value;
+  if (!ev || !sv) { showToast('Fill in Event Name and Supervisor Name first', 'error'); return; }
+
+  const total = appData.scanners.length + appData.radios.length + appData.jackets.length + appData.uniforms.length;
+  if (!confirm(`Ready to submit?\n\nEvent: ${ev}\nSupervisor: ${sv}\nItems logged: ${total}\n\nThis will email the report to:\n• Ushers@pacers.com\n• sadams-pantano@pacers.com`)) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Sending…';
+
+  try {
+    const dt = document.getElementById('eventDate').value || '';
+    const doc = buildPDF();
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+    const res = await fetch('/send-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdfBase64, eventName: ev, eventDate: dt, supervisorName: sv })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      showToast('✓ Report emailed successfully!', 'success');
+      try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+      document.getElementById('saveIndicator').textContent = 'Submitted ✓';
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+  } catch (err) {
+    showToast('Email failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Submit & Send';
+  }
+}
+
+// Spinner animation
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+
+// ─── Init ─────────────────────────────────────────────
+document.getElementById('eventDate').valueAsDate = new Date();
+loadSave();
+</script>
+</body>
+</html>
