@@ -1,0 +1,77 @@
+# Usher Equipment Log — Setup Guide
+# ====================================
+# Follow these steps ONE TIME on your Windows computer.
+# After that, just open the URL on your iPad.
+
+STEP 1 — SENDGRID (sends your emails)
+--------------------------------------
+1. Go to: https://signup.sendgrid.com
+2. Create a free account (use your Pacers email)
+3. Verify your email address when they send you a confirmation
+4. Once logged in, go to: Settings → API Keys
+5. Click "Create API Key"
+   - Name it: Pacers Equipment Log
+   - Select "Restricted Access"
+   - Turn ON "Mail Send"
+   - Click Create & View
+6. COPY the long key that appears (starts with SG.)
+   !! You can only see this key ONCE — paste it somewhere safe !!
+
+
+STEP 2 — GITHUB (stores your app files — free)
+-----------------------------------------------
+1. Go to: https://github.com/signup
+2. Create a free account
+3. Click the "+" in the top right → "New repository"
+4. Name it: usher-equipment-log
+5. Leave everything else as default → click "Create repository"
+6. Click "uploading an existing file"
+7. Drag ALL the files from the folder I gave you into the upload area:
+   - server.js
+   - package.json
+   - public/index.html  (upload this inside a folder called "public")
+8. Click "Commit changes"
+
+
+STEP 3 — RENDER (hosts your app — free)
+-----------------------------------------
+1. Go to: https://render.com
+2. Sign up with your GitHub account (click "Sign in with GitHub")
+3. Click "New +" → "Web Service"
+4. Connect your "usher-equipment-log" repository
+5. Fill in these settings:
+   - Name: usher-equipment-log
+   - Build Command: npm install
+   - Start Command: node server.js
+6. Scroll down to "Environment Variables" and add these:
+   - Key: SENDGRID_API_KEY    Value: (paste your SG. key from Step 1)
+   - Key: FROM_EMAIL          Value: (a verified email you own — e.g. your Pacers email)
+7. Click "Create Web Service"
+8. Wait 2-3 minutes — Render will give you a URL like:
+   https://usher-equipment-log.onrender.com
+
+
+STEP 4 — SENDGRID SENDER VERIFICATION
+---------------------------------------
+Before SendGrid will send emails, verify your FROM_EMAIL:
+1. In SendGrid, go to: Settings → Sender Authentication
+2. Click "Verify a Single Sender"
+3. Enter your FROM_EMAIL address and fill in the form
+4. Check your email for a verification link and click it
+
+
+STEP 5 — OPEN ON IPAD
+-----------------------
+1. On your iPad, open Safari
+2. Type your Render URL (e.g. https://usher-equipment-log.onrender.com)
+3. Tap the Share button (box with arrow pointing up)
+4. Tap "Add to Home Screen"
+5. Tap "Add"
+
+The app will now appear on your home screen like a real app!
+
+
+NEED HELP?
+-----------
+If you get stuck on any step, take a screenshot and share it —
+I can walk you through exactly what to do next.
